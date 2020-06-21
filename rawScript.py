@@ -1,10 +1,13 @@
 import struct
+from PIL import Image
+
 
 file_path = './img/test_uncompressed.RAF'
-export_path = './dng/test.dng'
+export_path = './ept/test'
 
 
 class RAFHeader:
+    # .RAF basic imformation
     def __init__(self, filename):
         with open(filename, 'rb') as f:
             self.type_string = struct.unpack('>16s', f.read(16))[0]
@@ -22,9 +25,11 @@ class RAFHeader:
 
 
 class JPEG:
+    # Exif JFIF with thumbnail + preview
     def __init__(self, filename, offset, length):
         with open(filename, 'rb') as f:
             f.seek(offset)
+            self.bin = f.read(length)
 
 
 class CFAHeader:
@@ -49,24 +54,26 @@ class CFA:
 class RAF:
     def __init__(self, filename):
         self.header = RAFHeader(filename)
-        # self.jpg = JPEG(filename, self.header.offset_jpg_offset, self.header.offset_jpg_length)
+        self.jpg = JPEG(filename, self.header.offset_jpg_offset, self.header.offset_jpg_length)
         self.CFA_header = CFAHeader(filename, self.header.offset_CFA_header_offset, self.header.offset_CFA_header_length)
         # self.CFA = CFA(filename, self.header.offset_CFA_offset, self.header.offset_CFA_length)
 
-    def export_EXIF(self):
+    def __export_exif(self, path):
+        jpg_bin = self.jpg.bin
+
+    def __export_jpg(self, path):
+        with open(path, "wb") as f:
+            f.write(self.jpg.bin)
+
+    def __export_dng(self, path):
         pass
 
-    def export_DNG(self, path):
-        pass
+    def export(self, path, suffix):
+        eval("self._RAF__export_"+suffix.lower()+"('"+path+'.'+suffix+"')")
 
 
 if __name__ == '__main__':
     obj = RAF(file_path)
+    obj.export(export_path, 'jpg')
     pass
-    # with open(FilePath, "rb") as f:
-    #     # 循环读取一张图片，一次性读取1024个字节
-    #     while True:
-    #         strb = f.read(1024)
-    #         if strb == b"":
-    #             break
-    #         print(strb)
+
