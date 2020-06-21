@@ -7,7 +7,7 @@ export_path = './ept/test'
 
 
 class RAFHeader:
-    # .RAF basic imformation
+    # .RAF basic information
     def __init__(self, filename):
         with open(filename, 'rb') as f:
             self.type_string = struct.unpack('>16s', f.read(16))[0]
@@ -31,42 +31,51 @@ class JPEG:
             f.seek(offset)
             self.bin = f.read(length)
 
-
-class CFAHeader:
-    def __init__(self, filename, offset, length):
-        self.data = []
-        with open(filename, 'rb') as f:
-            f.seek(offset)
-            self.count = struct.unpack('>1i', f.read(4))[0]
-            for record in range(self.count):
-                tag = struct.unpack('>1h', f.read(2))[0]
-                size = struct.unpack('>1h', f.read(2))[0]
-                data = struct.unpack('>'+str(int(size/4))+'i', f.read(size))[0]
-                self.data.append({"id": tag, "size": size, "data": data})
+    def exif(self):
+        pass
+        # todo
 
 
 class CFA:
-    def __init__(self, filename, offset, length):
+    def __init__(self, filename, header_offset, header_length, data_offset, data_length):
+        self.filename = filename
+        self.data_offset = data_offset
+        self.data_length = data_length
+        self.records = []
         with open(filename, 'rb') as f:
-            f.seek(offset)
+            f.seek(header_offset)
+            self.count = struct.unpack('>1i', f.read(4))[0]
+            for record in range(self.count):
+                tag = struct.unpack('>1H', f.read(2))[0]
+                size = struct.unpack('>1H', f.read(2))[0]
+                self.records.append({"id": tag, "size": size, "data": f.read(size)})
+            pass
+
+    def unpack(self):
+        with open(self.filename, 'rb') as f:
+            f.seek(self.data_offset)
+            # todo
 
 
 class RAF:
     def __init__(self, filename):
+        self.filename = filename
         self.header = RAFHeader(filename)
         self.jpg = JPEG(filename, self.header.offset_jpg_offset, self.header.offset_jpg_length)
-        self.CFA_header = CFAHeader(filename, self.header.offset_CFA_header_offset, self.header.offset_CFA_header_length)
-        # self.CFA = CFA(filename, self.header.offset_CFA_offset, self.header.offset_CFA_length)
+        self.CFA = CFA(filename, self.header.offset_CFA_header_offset, self.header.offset_CFA_header_length,
+                       self.header.offset_CFA_offset, self.header.offset_CFA_length)
 
     def __export_exif(self, path):
         jpg_bin = self.jpg.bin
+        # todo
 
     def __export_jpg(self, path):
         with open(path, "wb") as f:
             f.write(self.jpg.bin)
 
     def __export_dng(self, path):
-        pass
+        self.CFA.unpack()
+        # todo
 
     def export(self, path, suffix):
         eval("self._RAF__export_"+suffix.lower()+"('"+path+'.'+suffix+"')")
@@ -74,6 +83,6 @@ class RAF:
 
 if __name__ == '__main__':
     obj = RAF(file_path)
-    obj.export(export_path, 'jpg')
+    # obj.export(export_path, 'jpg')
     pass
 
